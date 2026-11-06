@@ -1,0 +1,6 @@
+{
+  "name": "СтройCRM - Управление строительными объектами",
+  "description": "Профессиональная CRM-система для строительных компаний с контролем объектов, задач, жизненного цикла статусов и аудитом изменений.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
