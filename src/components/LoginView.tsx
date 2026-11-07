@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HardHat, Lock, Mail, ArrowRight, ShieldCheck, Database, KeyRound, AlertCircle } from 'lucide-react';
+import { HardHat, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface LoginViewProps {
@@ -11,8 +11,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
   onOpenSupabaseConfig,
   onOpenSqlModal,
 }) => {
-  const { signIn, isSupabaseMode, availableDemoUsers } = useAuth();
-  const [email, setEmail] = useState('');
+  const { signIn, isSupabaseMode } = useAuth();
+  const [email, setEmail] = useState('ogabek@gmail.com');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,22 +24,8 @@ export const LoginView: React.FC<LoginViewProps> = ({
 
     try {
       await signIn(email, password);
-    } catch (err: any) {
-      setError(err.message || 'Ошибка авторизации. Проверьте введенные данные.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickLogin = async (userEmail: string) => {
-    setEmail(userEmail);
-    setPassword('demo123456');
-    setError(null);
-    setLoading(true);
-    try {
-      await signIn(userEmail, 'demo123456');
-    } catch (err: any) {
-      setError(err.message || 'Ошибка авторизации');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка авторизации. Проверьте введенные данные.');
     } finally {
       setLoading(false);
     }
@@ -105,7 +91,7 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="director@stroycrm.ru"
+                  placeholder="ogabek@gmail.com"
                   className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
@@ -140,68 +126,6 @@ export const LoginView: React.FC<LoginViewProps> = ({
               <ArrowRight size={14} />
             </button>
           </form>
-
-          {/* Quick Demo Login Preset Buttons */}
-          <div className="pt-4 border-t border-slate-100">
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
-              Быстрый вход для тестирования:
-            </p>
-            <div className="space-y-1.5">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('director@stroycrm.ru')}
-                className="w-full text-left p-2.5 bg-slate-50 hover:bg-indigo-50/70 border border-slate-200 hover:border-indigo-200 rounded-md transition-colors flex items-center justify-between text-xs group"
-              >
-                <div>
-                  <div className="font-semibold text-slate-800 group-hover:text-indigo-900">
-                    👔 Александр Воронов (Руководитель)
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Полный доступ: создание объектов, назначение, приемка
-                  </div>
-                </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 font-medium">
-                  Директор
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('timur@stroycrm.ru')}
-                className="w-full text-left p-2.5 bg-slate-50 hover:bg-amber-50/70 border border-slate-200 hover:border-amber-200 rounded-md transition-colors flex items-center justify-between text-xs group"
-              >
-                <div>
-                  <div className="font-semibold text-slate-800 group-hover:text-amber-900">
-                    👷 Тимур Каримов (Исполнитель / Прораб)
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Только назначенные задачи, запуск работ, отправка на проверку
-                  </div>
-                </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">
-                  Исполнитель
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('aziz@stroycrm.ru')}
-                className="w-full text-left p-2.5 bg-slate-50 hover:bg-amber-50/70 border border-slate-200 hover:border-amber-200 rounded-md transition-colors flex items-center justify-between text-xs group"
-              >
-                <div>
-                  <div className="font-semibold text-slate-800 group-hover:text-amber-900">
-                    👷 Азиз Рахимов (Исполнитель / Инженер)
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Задачи на проверке, доработке и принятые
-                  </div>
-                </div>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">
-                  Исполнитель
-                </span>
-              </button>
-            </div>
-          </div>
 
           <div className="text-center pt-2">
             <button

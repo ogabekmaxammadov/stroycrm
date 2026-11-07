@@ -27,11 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 	const {
 		user,
 		isDirector,
-		isExecutor,
 		signOut,
-		isSupabaseMode,
-		switchDemoUser,
-		availableDemoUsers,
 	} = useAuth()
 	const [userDropdownOpen, setUserDropdownOpen] = useState(false)
 
@@ -101,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 					<div className='flex items-center gap-2 sm:gap-3'>
 						{/* Supabase Status Button */}
 
-						{/* User Profile & Demo Switcher */}
+						{/* User Profile */}
 						<div className='relative'>
 							<button
 								onClick={() => setUserDropdownOpen(!userDropdownOpen)}
@@ -157,41 +153,6 @@ export const Navbar: React.FC<NavbarProps> = ({
 											</span>
 										</div>
 									</div>
-
-									{/* Quick Role Switcher for Testing */}
-									<div className='px-3 py-1.5 text-[11px] text-slate-400 font-medium uppercase tracking-wider'>
-										Быстрое переключение роли:
-									</div>
-
-									{availableDemoUsers.map(profile => (
-										<button
-											key={profile.id}
-											onClick={() => switchDemoUser(profile.id)}
-											className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-slate-50 ${
-												user?.id === profile.id
-													? 'bg-indigo-50/60 font-semibold text-indigo-900'
-													: 'text-slate-700'
-											}`}
-										>
-											<div>
-												<div>{profile.full_name}</div>
-												<div className='text-[10px] text-slate-400'>
-													{profile.email}
-												</div>
-											</div>
-											<span
-												className={`text-[10px] px-1.5 py-0.5 rounded ${
-													profile.role === 'director'
-														? 'bg-indigo-100 text-indigo-700'
-														: 'bg-amber-100 text-amber-800'
-												}`}
-											>
-												{profile.role === 'director'
-													? 'Директор'
-													: 'Исполнитель'}
-											</span>
-										</button>
-									))}
 
 									<div className='border-t border-slate-100 mt-1 pt-1'>
 										<button

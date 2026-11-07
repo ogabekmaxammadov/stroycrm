@@ -11,22 +11,20 @@ interface AuthContextType {
   isExecutor: boolean;
   isLoading: boolean;
   isSupabaseMode: boolean;
-  signIn: (email: string, password?: string) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  switchDemoUser: (profileId: string) => void;
-  availableDemoUsers: UserProfile[];
   refreshUserProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_ACTIVE_USER_ID = 'stroycrm_active_demo_user_id';
+const LOCAL_LOGIN_EMAIL = 'ogabek@gmail.com';
+const LOCAL_LOGIN_PASSWORD = 'stroy1234';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSupabaseMode, setIsSupabaseMode] = useState<boolean>(false);
-  const [allProfiles, setAllProfiles] = useState<UserProfile[]>(INITIAL_PROFILES);
 
   // Initialize auth
   useEffect(() => {
@@ -56,15 +54,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch (err) {
           console.warn('Supabase auth session error:', err);
         }
+
+        setUser(null);
+        setIsLoading(false);
+        return;
       }
 
-      // Local / Demo mode fallback
-      const profiles = await dataService.getProfiles();
-      setAllProfiles(profiles);
-
-      const savedUserId = localStorage.getItem(STORAGE_ACTIVE_USER_ID);
-      const foundUser = profiles.find((p) => p.id === savedUserId) || profiles[0];
-      setUser(foundUser || null);
+      setUser(null);
       setIsLoading(false);
     }
 
@@ -82,7 +78,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (profile) setUser(profile as UserProfile);
     } else {
       const profiles = await dataService.getProfiles();
-      setAllProfiles(profiles);
       if (user) {
         const updated = profiles.find((p) => p.id === user.id);
         if (updated) setUser(updated);
@@ -90,55 +85,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (email: string, password?: string) => {
+  const signIn = async (email: string, password: string) => {
     setIsLoading(true);
-    const supabase = getSupabaseClient();
+    try {
+      const supabase = getSupabaseClient();
 
-    if (isSupabaseMode && supabase && password) {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
-      });
-
-      if (error) {
-        setIsLoading(false);
-        throw new Error(error.message);
-      }
-
-      if (data.user) {
-        const { data: profile, error: profError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profError || !profile) {
-          // If profile trigger is still propagating, construct fallback profile
-          const fallbackProfile: UserProfile = {
-            id: data.user.id,
-            email: data.user.email || email,
-            full_name: data.user.user_metadata?.full_name || email.split('@')[0],
-            role: (data.user.user_metadata?.role as UserRole) || 'executor',
-          };
-          setUser(fallbackProfile);
-        } else {
-          setUser(profile as UserProfile);
+      if (isSupabaseMode) {
+        if (!supabase) {
+          throw new Error('Не удалось подключиться к Supabase. Проверьте настройки базы данных.');
         }
-      }
-      setIsLoading(false);
-      return;
-    }
 
-    // Local / Demo mode sign in
-    const profiles = await dataService.getProfiles();
-    const matched = profiles.find((p) => p.email.toLowerCase() === email.trim().toLowerCase());
-    if (matched) {
-      setUser(matched);
-      localStorage.setItem(STORAGE_ACTIVE_USER_ID, matched.id);
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+
+        if (error) throw new Error(error.message);
+
+        if (data.user) {
+          const { data: profile, error: profError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .single();
+
+          if (profError || !profile) {
+            const fallbackProfile: UserProfile = {
+              id: data.user.id,
+              email: data.user.email || email,
+              full_name: data.user.user_metadata?.full_name || email.split('@')[0],
+              role: (data.user.user_metadata?.role as UserRole) || 'executor',
+            };
+            setUser(fallbackProfile);
+          } else {
+            setUser(profile as UserProfile);
+          }
+        }
+        return;
+      }
+
+      if (
+        email.trim().toLowerCase() !== LOCAL_LOGIN_EMAIL ||
+        password !== LOCAL_LOGIN_PASSWORD
+      ) {
+        throw new Error('Неверный email или пароль');
+      }
+
+      const profiles = await dataService.getProfiles();
+      const director = profiles.find((profile) => profile.role === 'director')
+        || INITIAL_PROFILES.find((profile) => profile.role === 'director');
+
+      if (!director) {
+        throw new Error('Не удалось загрузить профиль пользователя');
+      }
+
+      setUser({ ...director, email: LOCAL_LOGIN_EMAIL, full_name: 'Огабек' });
+    } finally {
       setIsLoading(false);
-    } else {
-      setIsLoading(false);
-      throw new Error(`Пользователь с email "${email}" не найден в системе`);
     }
   };
 
@@ -148,15 +151,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await supabase.auth.signOut();
     }
     setUser(null);
-    localStorage.removeItem(STORAGE_ACTIVE_USER_ID);
-  };
-
-  const switchDemoUser = (profileId: string) => {
-    const found = allProfiles.find((p) => p.id === profileId);
-    if (found) {
-      setUser(found);
-      localStorage.setItem(STORAGE_ACTIVE_USER_ID, found.id);
-    }
   };
 
   const role = user ? user.role : null;
@@ -174,8 +168,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isSupabaseMode,
         signIn,
         signOut,
-        switchDemoUser,
-        availableDemoUsers: allProfiles,
         refreshUserProfile,
       }}
     >
